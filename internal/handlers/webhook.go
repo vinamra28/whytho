@@ -65,8 +65,8 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 	}
 	logrus.WithFields(logrus.Fields{
 		"project_id": webhook.Project.ID,
-		"mr_iid": webhook.ObjectAttributes.IID,
-		"action": webhook.ObjectAttributes.Action,
+		"mr_iid":     webhook.ObjectAttributes.IID,
+		"action":     webhook.ObjectAttributes.Action,
 	}).Info("Parsed webhook payload")
 
 	if webhook.ObjectAttributes.Action != "open" && webhook.ObjectAttributes.Action != "reopen" && webhook.ObjectAttributes.Action != "update" {
@@ -77,7 +77,7 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 
 	logrus.WithFields(logrus.Fields{
 		"project_id": webhook.Project.ID,
-		"mr_iid": webhook.ObjectAttributes.IID,
+		"mr_iid":     webhook.ObjectAttributes.IID,
 	}).Info("Starting merge request processing")
 	go h.processMergeRequest(&webhook)
 
@@ -102,14 +102,14 @@ func (h *WebhookHandler) processMergeRequest(webhook *models.GitLabWebhook) {
 
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Info("Processing merge request")
 
 	changes, err := h.gitlabService.GetMRChanges(projectID, mrIID)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Error("Failed to fetch MR changes")
 		return
 	}
@@ -117,64 +117,64 @@ func (h *WebhookHandler) processMergeRequest(webhook *models.GitLabWebhook) {
 	if len(changes) == 0 {
 		logrus.WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Warn("No changes found in merge request")
 		return
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"project_id": projectID,
-		"mr_iid": mrIID,
+		"project_id":    projectID,
+		"mr_iid":        mrIID,
 		"changes_count": len(changes),
 	}).Info("Retrieved merge request changes")
 
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Info("Starting code review")
 
 	review, err := h.reviewService.ReviewCode(changes, webhook.ObjectAttributes.Title, webhook.ObjectAttributes.Description)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Error("Failed to review code")
 		return
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"project_id": projectID,
-		"mr_iid": mrIID,
-		"general_comments_count": len(review.Comments),
+		"project_id":                projectID,
+		"mr_iid":                    mrIID,
+		"general_comments_count":    len(review.Comments),
 		"positioned_comments_count": len(review.PositionedComments),
 	}).Info("Code review completed")
 
 	// Post positioned comments first
 	for i, posComment := range review.PositionedComments {
 		logrus.WithFields(logrus.Fields{
-			"project_id": projectID,
-			"mr_iid": mrIID,
-			"comment_index": i + 1,
+			"project_id":                projectID,
+			"mr_iid":                    mrIID,
+			"comment_index":             i + 1,
 			"total_positioned_comments": len(review.PositionedComments),
-			"file_path": posComment.FilePath,
-			"line_number": posComment.LineNumber,
+			"file_path":                 posComment.FilePath,
+			"line_number":               posComment.LineNumber,
 		}).Debug("Posting positioned review comment")
 
 		if err := h.gitlabService.PostPositionedMRComment(projectID, mrIID, posComment); err != nil {
 			logrus.WithError(err).WithFields(logrus.Fields{
-				"project_id": projectID,
-				"mr_iid": mrIID,
+				"project_id":    projectID,
+				"mr_iid":        mrIID,
 				"comment_index": i + 1,
-				"file_path": posComment.FilePath,
-				"line_number": posComment.LineNumber,
+				"file_path":     posComment.FilePath,
+				"line_number":   posComment.LineNumber,
 			}).Error("Failed to post positioned review comment")
 		} else {
 			logrus.WithFields(logrus.Fields{
-				"project_id": projectID,
-				"mr_iid": mrIID,
+				"project_id":    projectID,
+				"mr_iid":        mrIID,
 				"comment_index": i + 1,
-				"file_path": posComment.FilePath,
-				"line_number": posComment.LineNumber,
+				"file_path":     posComment.FilePath,
+				"line_number":   posComment.LineNumber,
 			}).Debug("Positioned review comment posted successfully")
 		}
 	}
@@ -182,22 +182,22 @@ func (h *WebhookHandler) processMergeRequest(webhook *models.GitLabWebhook) {
 	// Post general comments
 	for i, comment := range review.Comments {
 		logrus.WithFields(logrus.Fields{
-			"project_id": projectID,
-			"mr_iid": mrIID,
-			"comment_index": i + 1,
+			"project_id":             projectID,
+			"mr_iid":                 mrIID,
+			"comment_index":          i + 1,
 			"total_general_comments": len(review.Comments),
 		}).Debug("Posting general review comment")
 
 		if err := h.gitlabService.PostMRComment(projectID, mrIID, comment); err != nil {
 			logrus.WithError(err).WithFields(logrus.Fields{
-				"project_id": projectID,
-				"mr_iid": mrIID,
+				"project_id":    projectID,
+				"mr_iid":        mrIID,
 				"comment_index": i + 1,
 			}).Error("Failed to post general review comment")
 		} else {
 			logrus.WithFields(logrus.Fields{
-				"project_id": projectID,
-				"mr_iid": mrIID,
+				"project_id":    projectID,
+				"mr_iid":        mrIID,
 				"comment_index": i + 1,
 			}).Debug("General review comment posted successfully")
 		}
@@ -206,26 +206,26 @@ func (h *WebhookHandler) processMergeRequest(webhook *models.GitLabWebhook) {
 	if review.Summary != "" {
 		logrus.WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Info("Posting review summary")
 
 		summaryComment := fmt.Sprintf("## 🤖 AI Code Review Summary\n\n%s", review.Summary)
 		if err := h.gitlabService.PostMRComment(projectID, mrIID, summaryComment); err != nil {
 			logrus.WithError(err).WithFields(logrus.Fields{
 				"project_id": projectID,
-				"mr_iid": mrIID,
+				"mr_iid":     mrIID,
 			}).Error("Failed to post summary comment")
 		} else {
 			logrus.WithFields(logrus.Fields{
 				"project_id": projectID,
-				"mr_iid": mrIID,
+				"mr_iid":     mrIID,
 			}).Info("Summary comment posted successfully")
 		}
 	}
 
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Info("Merge request processing completed")
 }
 

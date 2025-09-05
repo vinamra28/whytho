@@ -34,7 +34,7 @@ func NewReviewService(apiKey string) *ReviewService {
 func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description string) (*models.CodeReview, error) {
 	logrus.WithFields(logrus.Fields{
 		"changes_count": len(changes),
-		"mr_title": title,
+		"mr_title":      title,
 	}).Info("Starting AI code review")
 
 	ctx := context.Background()
@@ -43,7 +43,7 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 	model.SetTemperature(0.1)
 
 	var codeContent strings.Builder
-	codeContent.WriteString(fmt.Sprintf("## Merge Request Details\n"))
+	codeContent.WriteString("## Merge Request Details\n")
 	codeContent.WriteString(fmt.Sprintf("**Title:** %s\n", title))
 	codeContent.WriteString(fmt.Sprintf("**Description:** %s\n\n", description))
 
@@ -57,9 +57,9 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 		}
 
 		logrus.WithFields(logrus.Fields{
-			"file": change.NewPath,
+			"file":     change.NewPath,
 			"new_file": change.NewFile,
-			"renamed": change.RenamedFile,
+			"renamed":  change.RenamedFile,
 		}).Debug("Processing file change")
 
 		codeContent.WriteString(fmt.Sprintf("## File: %s\n", change.NewPath))
@@ -69,7 +69,7 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 		if change.RenamedFile {
 			codeContent.WriteString(fmt.Sprintf("(Renamed from: %s)\n", change.OldPath))
 		}
-		
+
 		// Process the diff to add line numbers for AI reference
 		codeContent.WriteString("```diff\n")
 		processedDiff := r.addLineNumbersToDiff(change.Diff)
@@ -147,21 +147,21 @@ Be constructive and specific in your feedback. Only reference lines that are vis
 func (r *ReviewService) parseReview(reviewText string) *models.CodeReview {
 	logrus.Debug("Parsing AI review response")
 	lines := strings.Split(reviewText, "\n")
-	
+
 	var summary strings.Builder
 	var comments []string
 	var positionedComments []models.PositionedComment
-	
+
 	inSummary := true
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if strings.HasPrefix(line, "COMMENT:") {
 			inSummary = false
 			comment := strings.TrimPrefix(line, "COMMENT:")
 			comment = strings.TrimSpace(comment)
-			
+
 			if comment != "" {
 				// Try to parse positioned comment format: filename:line:type:comment
 				parts := strings.SplitN(comment, ":", 4)
@@ -170,22 +170,22 @@ func (r *ReviewService) parseReview(reviewText string) *models.CodeReview {
 					lineNumStr := parts[1]
 					lineType := parts[2]
 					commentText := parts[3]
-					
+
 					if lineNum, err := strconv.Atoi(lineNumStr); err == nil {
 						// Valid positioned comment
 						positionedComment := models.PositionedComment{
-							FilePath:    filePath,
-							LineNumber:  lineNum,
-							LineType:    lineType,
-							Comment:     commentText,
+							FilePath:     filePath,
+							LineNumber:   lineNum,
+							LineType:     lineType,
+							Comment:      commentText,
 							OriginalLine: "", // We could enhance this later
 						}
 						positionedComments = append(positionedComments, positionedComment)
-						
+
 						logrus.WithFields(logrus.Fields{
-							"file_path": filePath,
+							"file_path":   filePath,
 							"line_number": lineNum,
-							"line_type": lineType,
+							"line_type":   lineType,
 						}).Debug("Parsed positioned comment")
 					} else {
 						// Fallback to general comment
@@ -205,16 +205,16 @@ func (r *ReviewService) parseReview(reviewText string) *models.CodeReview {
 			summary.WriteString(line)
 		}
 	}
-	
+
 	logrus.WithFields(logrus.Fields{
-		"summary_length": len(summary.String()),
-		"general_comments_count": len(comments),
+		"summary_length":            len(summary.String()),
+		"general_comments_count":    len(comments),
 		"positioned_comments_count": len(positionedComments),
 	}).Debug("Review parsing completed")
 
 	return &models.CodeReview{
-		Summary:           summary.String(),
-		Comments:          comments,
+		Summary:            summary.String(),
+		Comments:           comments,
 		PositionedComments: positionedComments,
 	}
 }
@@ -233,14 +233,14 @@ func (r *ReviewService) addLineNumbersToDiff(diff string) string {
 			if len(parts) >= 3 {
 				oldPart := strings.TrimPrefix(parts[1], "-")
 				newPart := strings.TrimPrefix(parts[2], "+")
-				
+
 				if oldComma := strings.Index(oldPart, ","); oldComma > 0 {
 					oldPart = oldPart[:oldComma]
 				}
 				if newComma := strings.Index(newPart, ","); newComma > 0 {
 					newPart = newPart[:newComma]
 				}
-				
+
 				if oldStart, err := strconv.Atoi(oldPart); err == nil {
 					oldLineNum = oldStart - 1
 				}

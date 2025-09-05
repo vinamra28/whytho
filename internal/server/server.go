@@ -15,22 +15,22 @@ type Server struct {
 
 func New(cfg *config.Config) *Server {
 	logrus.Info("Initializing server")
-	
+
 	router := gin.Default()
-	
+
 	logrus.Info("Creating GitLab service")
 	gitlabService := services.NewGitLabService(cfg.GitLabToken, cfg.GitLabBaseURL)
-	
+
 	logrus.Info("Creating review service")
 	reviewService := services.NewReviewService(cfg.GeminiAPIKey)
-	
+
 	logrus.Info("Creating webhook handler")
 	webhookHandler := handlers.NewWebhookHandler(gitlabService, reviewService, cfg.WebhookSecret)
-	
+
 	logrus.Info("Setting up routes")
 	router.POST("/webhook", webhookHandler.HandleWebhook)
 	router.GET("/health", handlers.HealthCheck)
-	
+
 	logrus.Info("Server initialized successfully")
 	return &Server{
 		config: cfg,

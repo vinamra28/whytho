@@ -11,9 +11,9 @@ import (
 func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetLevel(logrus.InfoLevel)
-	
+
 	logrus.Info("Starting GitLab MR Reviewer Bot")
-	
+
 	cfg, err := config.Load()
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to load configuration")
@@ -21,7 +21,7 @@ func main() {
 	logrus.Info("Configuration loaded successfully")
 
 	srv := server.New(cfg)
-	
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

@@ -121,8 +121,8 @@ type MRChange struct {
 }
 
 type CodeReview struct {
-	Summary           string            `json:"summary"`
-	Comments          []string          `json:"comments"`
+	Summary            string              `json:"summary"`
+	Comments           []string            `json:"comments"`
 	PositionedComments []PositionedComment `json:"positioned_comments"`
 }
 
@@ -136,9 +136,9 @@ type PositionedComment struct {
 }
 
 type DiffLine struct {
-	Type        string `json:"type"`        // "+", "-", " " (context)
-	Content     string `json:"content"`     // The actual line content
-	OldLineNum  int    `json:"old_line_num"` // Line number in old file (0 if new line)
-	NewLineNum  int    `json:"new_line_num"` // Line number in new file (0 if deleted line)
-	Position    int    `json:"position"`    // Position in diff for GitLab API
+	Type       string `json:"type"`         // "+", "-", " " (context)
+	Content    string `json:"content"`      // The actual line content
+	OldLineNum int    `json:"old_line_num"` // Line number in old file (0 if new line)
+	NewLineNum int    `json:"new_line_num"` // Line number in new file (0 if deleted line)
+	Position   int    `json:"position"`     // Position in diff for GitLab API
 }

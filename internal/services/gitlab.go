@@ -39,14 +39,14 @@ func NewGitLabService(token, baseURL string) *GitLabService {
 func (g *GitLabService) GetMRChanges(projectID, mrIID int) ([]models.MRChange, error) {
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Debug("Fetching merge request changes")
 
 	changes, _, err := g.client.MergeRequests.GetMergeRequestChanges(projectID, mrIID, nil)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Error("Failed to fetch merge request changes from GitLab API")
 		return nil, fmt.Errorf("failed to get MR changes: %w", err)
 	}
@@ -67,8 +67,8 @@ func (g *GitLabService) GetMRChanges(projectID, mrIID int) ([]models.MRChange, e
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"project_id": projectID,
-		"mr_iid": mrIID,
+		"project_id":    projectID,
+		"mr_iid":        mrIID,
 		"changes_count": len(mrChanges),
 	}).Debug("Successfully fetched merge request changes")
 
@@ -78,7 +78,7 @@ func (g *GitLabService) GetMRChanges(projectID, mrIID int) ([]models.MRChange, e
 func (g *GitLabService) PostMRComment(projectID, mrIID int, comment string) error {
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Debug("Posting comment to merge request")
 
 	note := &gitlab.CreateMergeRequestNoteOptions{
@@ -89,14 +89,14 @@ func (g *GitLabService) PostMRComment(projectID, mrIID int, comment string) erro
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Error("Failed to post comment to GitLab")
 		return fmt.Errorf("failed to post MR comment: %w", err)
 	}
 
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Debug("Comment posted successfully to merge request")
 
 	return nil
@@ -104,11 +104,11 @@ func (g *GitLabService) PostMRComment(projectID, mrIID int, comment string) erro
 
 func (g *GitLabService) PostPositionedMRComment(projectID, mrIID int, positionedComment models.PositionedComment) error {
 	logrus.WithFields(logrus.Fields{
-		"project_id": projectID,
-		"mr_iid":     mrIID,
-		"file_path":  positionedComment.FilePath,
+		"project_id":  projectID,
+		"mr_iid":      mrIID,
+		"file_path":   positionedComment.FilePath,
 		"line_number": positionedComment.LineNumber,
-		"line_type":  positionedComment.LineType,
+		"line_type":   positionedComment.LineType,
 	}).Debug("Posting positioned comment to merge request")
 
 	// Get merge request details to get SHA values
@@ -125,13 +125,13 @@ func (g *GitLabService) PostPositionedMRComment(projectID, mrIID int, positioned
 	actualLineNumber, err := g.convertDiffLineToActualLine(projectID, mrIID, positionedComment)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
-			"project_id": projectID,
-			"mr_iid":     mrIID,
-			"file_path":  positionedComment.FilePath,
+			"project_id":  projectID,
+			"mr_iid":      mrIID,
+			"file_path":   positionedComment.FilePath,
 			"line_number": positionedComment.LineNumber,
 		}).Warn("Failed to convert diff line to actual line, falling back to general comment")
-		
-		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)**\n\n%s", 
+
+		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)**\n\n%s",
 			positionedComment.FilePath, positionedComment.LineNumber, positionedComment.Comment))
 	}
 
@@ -140,32 +140,32 @@ func (g *GitLabService) PostPositionedMRComment(projectID, mrIID int, positioned
 	actualComment.LineNumber = actualLineNumber
 
 	// Use the discussions API with proper SHA values
-	err = g.postPositionedCommentHTTP(projectID, mrIID, actualComment, 
+	err = g.postPositionedCommentHTTP(projectID, mrIID, actualComment,
 		mr.DiffRefs.BaseSha, mr.DiffRefs.HeadSha, mr.DiffRefs.StartSha)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
-			"project_id": projectID,
-			"mr_iid":     mrIID,
-			"file_path":  positionedComment.FilePath,
+			"project_id":  projectID,
+			"mr_iid":      mrIID,
+			"file_path":   positionedComment.FilePath,
 			"line_number": actualLineNumber,
 		}).Error("Failed to post positioned comment to GitLab")
-		
+
 		// Fall back to posting a general comment
 		logrus.WithFields(logrus.Fields{
 			"project_id": projectID,
 			"mr_iid":     mrIID,
 			"file_path":  positionedComment.FilePath,
 		}).Info("Falling back to general comment")
-		
-		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)**\n\n%s", 
+
+		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)**\n\n%s",
 			positionedComment.FilePath, positionedComment.LineNumber, positionedComment.Comment))
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"project_id": projectID,
-		"mr_iid":     mrIID,
-		"file_path":  positionedComment.FilePath,
-		"diff_line_number": positionedComment.LineNumber,
+		"project_id":         projectID,
+		"mr_iid":             mrIID,
+		"file_path":          positionedComment.FilePath,
+		"diff_line_number":   positionedComment.LineNumber,
 		"actual_line_number": actualLineNumber,
 	}).Debug("Positioned comment posted successfully to merge request")
 
@@ -174,7 +174,7 @@ func (g *GitLabService) PostPositionedMRComment(projectID, mrIID int, positioned
 
 func (g *GitLabService) postPositionedCommentHTTP(projectID, mrIID int, positionedComment models.PositionedComment, baseSHA, headSHA, startSHA string) error {
 	// Construct the API URL for discussions
-	url := fmt.Sprintf("%s/api/v4/projects/%d/merge_requests/%d/discussions", 
+	url := fmt.Sprintf("%s/api/v4/projects/%d/merge_requests/%d/discussions",
 		strings.TrimSuffix(g.baseURL, "/"), projectID, mrIID)
 
 	// Create form data
@@ -182,28 +182,29 @@ func (g *GitLabService) postPositionedCommentHTTP(projectID, mrIID int, position
 	writer := multipart.NewWriter(&buf)
 
 	// Add body
-	writer.WriteField("body", positionedComment.Comment)
+	_ = writer.WriteField("body", positionedComment.Comment)
 
 	// Add position fields
-	writer.WriteField("position[position_type]", "text")
-	writer.WriteField("position[base_sha]", baseSHA)
-	writer.WriteField("position[head_sha]", headSHA)
-	writer.WriteField("position[start_sha]", startSHA)
-	writer.WriteField("position[new_path]", positionedComment.FilePath)
-	writer.WriteField("position[old_path]", positionedComment.FilePath)
+	_ = writer.WriteField("position[position_type]", "text")
+	_ = writer.WriteField("position[base_sha]", baseSHA)
+	_ = writer.WriteField("position[head_sha]", headSHA)
+	_ = writer.WriteField("position[start_sha]", startSHA)
+	_ = writer.WriteField("position[new_path]", positionedComment.FilePath)
+	_ = writer.WriteField("position[old_path]", positionedComment.FilePath)
 
 	// Add line number based on line type
-	if positionedComment.LineType == "new" {
-		writer.WriteField("position[new_line]", strconv.Itoa(positionedComment.LineNumber))
-	} else if positionedComment.LineType == "old" {
-		writer.WriteField("position[old_line]", strconv.Itoa(positionedComment.LineNumber))
-	} else {
+	switch positionedComment.LineType {
+	case "new":
+		_ = writer.WriteField("position[new_line]", strconv.Itoa(positionedComment.LineNumber))
+	case "old":
+		_ = writer.WriteField("position[old_line]", strconv.Itoa(positionedComment.LineNumber))
+	default:
 		// For context lines, include both line numbers
-		writer.WriteField("position[new_line]", strconv.Itoa(positionedComment.LineNumber))
-		writer.WriteField("position[old_line]", strconv.Itoa(positionedComment.LineNumber))
+		_ = writer.WriteField("position[new_line]", strconv.Itoa(positionedComment.LineNumber))
+		_ = writer.WriteField("position[old_line]", strconv.Itoa(positionedComment.LineNumber))
 	}
 
-	writer.Close()
+	_ = writer.Close()
 
 	// Create HTTP request
 	req, err := http.NewRequest("POST", url, &buf)
@@ -234,11 +235,11 @@ func (g *GitLabService) postPositionedCommentHTTP(projectID, mrIID int, position
 
 func (g *GitLabService) convertDiffLineToActualLine(projectID, mrIID int, positionedComment models.PositionedComment) (int, error) {
 	logrus.WithFields(logrus.Fields{
-		"project_id": projectID,
-		"mr_iid":     mrIID,
-		"file_path":  positionedComment.FilePath,
+		"project_id":       projectID,
+		"mr_iid":           mrIID,
+		"file_path":        positionedComment.FilePath,
 		"diff_line_number": positionedComment.LineNumber,
-		"line_type":  positionedComment.LineType,
+		"line_type":        positionedComment.LineType,
 	}).Debug("Converting diff line number to actual line number")
 
 	// Get merge request changes
@@ -270,14 +271,14 @@ func (g *GitLabService) findActualLineNumber(diff string, positionedComment mode
 			if len(parts) >= 3 {
 				oldPart := strings.TrimPrefix(parts[1], "-")
 				newPart := strings.TrimPrefix(parts[2], "+")
-				
+
 				if oldComma := strings.Index(oldPart, ","); oldComma > 0 {
 					oldPart = oldPart[:oldComma]
 				}
 				if newComma := strings.Index(newPart, ","); newComma > 0 {
 					newPart = newPart[:newComma]
 				}
-				
+
 				if oldStart, err := strconv.Atoi(oldPart); err == nil {
 					oldLineNum = oldStart - 1
 				}
@@ -287,15 +288,15 @@ func (g *GitLabService) findActualLineNumber(diff string, positionedComment mode
 			}
 			continue
 		}
-		
+
 		if strings.HasPrefix(line, "+") {
 			newLineNum++
 			diffLineNum++
 			if positionedComment.LineType == "new" && diffLineNum == positionedComment.LineNumber {
 				logrus.WithFields(logrus.Fields{
-					"diff_line": diffLineNum,
+					"diff_line":   diffLineNum,
 					"actual_line": newLineNum,
-					"line_type": "new",
+					"line_type":   "new",
 				}).Debug("Found actual line number for new line")
 				return newLineNum, nil
 			}
@@ -304,9 +305,9 @@ func (g *GitLabService) findActualLineNumber(diff string, positionedComment mode
 			diffLineNum++
 			if positionedComment.LineType == "old" && diffLineNum == positionedComment.LineNumber {
 				logrus.WithFields(logrus.Fields{
-					"diff_line": diffLineNum,
+					"diff_line":   diffLineNum,
 					"actual_line": oldLineNum,
-					"line_type": "old",
+					"line_type":   "old",
 				}).Debug("Found actual line number for old line")
 				return oldLineNum, nil
 			}
@@ -316,9 +317,9 @@ func (g *GitLabService) findActualLineNumber(diff string, positionedComment mode
 			diffLineNum++
 			if positionedComment.LineType == "context" && diffLineNum == positionedComment.LineNumber {
 				logrus.WithFields(logrus.Fields{
-					"diff_line": diffLineNum,
+					"diff_line":   diffLineNum,
 					"actual_line": newLineNum,
-					"line_type": "context",
+					"line_type":   "context",
 				}).Debug("Found actual line number for context line")
 				return newLineNum, nil
 			}
@@ -328,27 +329,25 @@ func (g *GitLabService) findActualLineNumber(diff string, positionedComment mode
 	return 0, fmt.Errorf("could not find actual line number for diff line %d", positionedComment.LineNumber)
 }
 
-
-
 func (g *GitLabService) GetMRDetails(projectID, mrIID int) (*gitlab.MergeRequest, error) {
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
+		"mr_iid":     mrIID,
 	}).Debug("Fetching merge request details")
 
 	mr, _, err := g.client.MergeRequests.GetMergeRequest(projectID, mrIID, nil)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"project_id": projectID,
-			"mr_iid": mrIID,
+			"mr_iid":     mrIID,
 		}).Error("Failed to fetch merge request details from GitLab API")
 		return nil, fmt.Errorf("failed to get MR details: %w", err)
 	}
 
 	logrus.WithFields(logrus.Fields{
 		"project_id": projectID,
-		"mr_iid": mrIID,
-		"mr_title": mr.Title,
+		"mr_iid":     mrIID,
+		"mr_title":   mr.Title,
 	}).Debug("Successfully fetched merge request details")
 
 	return mr, nil

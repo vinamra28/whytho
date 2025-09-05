@@ -8,27 +8,27 @@ import (
 )
 
 type Config struct {
-	GitLabToken     string
-	GitLabBaseURL   string
-	GeminiAPIKey    string
-	WebhookSecret   string
+	GitLabToken   string
+	GitLabBaseURL string
+	GeminiAPIKey  string
+	WebhookSecret string
 }
 
 func Load() (*Config, error) {
 	logrus.Debug("Loading configuration from environment variables")
-	
+
 	cfg := &Config{
-		GitLabToken:     os.Getenv("GITLAB_TOKEN"),
-		GitLabBaseURL:   os.Getenv("GITLAB_BASE_URL"),
-		GeminiAPIKey:    os.Getenv("GEMINI_API_KEY"),
-		WebhookSecret:   os.Getenv("WEBHOOK_SECRET"),
+		GitLabToken:   os.Getenv("GITLAB_TOKEN"),
+		GitLabBaseURL: os.Getenv("GITLAB_BASE_URL"),
+		GeminiAPIKey:  os.Getenv("GEMINI_API_KEY"),
+		WebhookSecret: os.Getenv("WEBHOOK_SECRET"),
 	}
 
 	if cfg.GitLabToken == "" {
 		logrus.Error("GITLAB_TOKEN environment variable is missing")
 		return nil, fmt.Errorf("GITLAB_TOKEN environment variable is required")
 	}
-	
+
 	if cfg.GeminiAPIKey == "" {
 		logrus.Error("GEMINI_API_KEY environment variable is missing")
 		return nil, fmt.Errorf("GEMINI_API_KEY environment variable is required")
