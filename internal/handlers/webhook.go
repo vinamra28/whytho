@@ -133,7 +133,7 @@ func (h *WebhookHandler) processMergeRequest(webhook *models.GitLabWebhook) {
 		"mr_iid":     mrIID,
 	}).Info("Starting code review")
 
-	review, err := h.reviewService.ReviewCode(changes, webhook.ObjectAttributes.Title, webhook.ObjectAttributes.Description)
+	review, err := h.reviewService.ReviewCode(changes, webhook.ObjectAttributes.Title, webhook.ObjectAttributes.Description, h.gitlabService, projectID, webhook.ObjectAttributes.TargetBranch)
 	if err != nil {
 		logrus.WithError(err).WithFields(logrus.Fields{
 			"project_id": projectID,

@@ -2,6 +2,7 @@ package services
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -351,4 +352,54 @@ func (g *GitLabService) GetMRDetails(projectID, mrIID int) (*gitlab.MergeRequest
 	}).Debug("Successfully fetched merge request details")
 
 	return mr, nil
+}
+
+func (g *GitLabService) GetReviewGuidance(projectID int, branch string) (string, error) {
+	logrus.WithFields(logrus.Fields{
+		"project_id": projectID,
+		"branch":     branch,
+	}).Debug("Fetching review guidance from repository")
+
+	// Try to fetch guidance.md from the repository
+	file, _, err := g.client.RepositoryFiles.GetFile(projectID, "guidance.md", &gitlab.GetFileOptions{
+		Ref: &branch,
+	})
+	if err != nil {
+		// Check if it's a 404 error (file not found)
+		if strings.Contains(err.Error(), "404") {
+			logrus.WithFields(logrus.Fields{
+				"project_id": projectID,
+				"branch":     branch,
+			}).Debug("No guidance.md file found in repository")
+			return "", nil // Return empty string, not an error
+		}
+		
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"project_id": projectID,
+			"branch":     branch,
+		}).Error("Failed to fetch guidance.md from repository")
+		return "", fmt.Errorf("failed to fetch guidance.md: %w", err)
+	}
+
+	// Decode the file content (GitLab returns base64 encoded content)
+	content := file.Content
+	if file.Encoding == "base64" {
+		decoded, err := base64.StdEncoding.DecodeString(content)
+		if err != nil {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"project_id": projectID,
+				"branch":     branch,
+			}).Error("Failed to decode guidance.md content")
+			return "", fmt.Errorf("failed to decode guidance.md: %w", err)
+		}
+		content = string(decoded)
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"project_id":      projectID,
+		"branch":          branch,
+		"guidance_length": len(content),
+	}).Info("Successfully fetched review guidance from repository")
+
+	return content, nil
 }

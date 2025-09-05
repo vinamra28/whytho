@@ -7,8 +7,11 @@ An AI-powered GitLab merge request reviewer bot that uses Google's Gemini LLM to
 - 🤖 **AI-Powered Reviews**: Uses Google Gemini to analyze code changes and provide intelligent feedback
 - 🔗 **GitLab Integration**: Seamless integration with GitLab webhooks
 - 🚀 **Automatic Comments**: Posts review comments directly on merge requests
+- 📍 **Positioned Comments**: AI can comment on specific lines in diffs for precise feedback
+- 📋 **Custom Review Guidance**: Supports repository-specific review criteria via guidance.md files
 - 🔒 **Secure**: Supports webhook signature verification
 - 📊 **Comprehensive Analysis**: Reviews code quality, security, performance, and best practices
+- 📝 **Structured Logging**: Uses logrus for comprehensive structured logging
 - 🐳 **Containerized**: Ready-to-deploy Docker setup
 
 ## Prerequisites
@@ -54,16 +57,19 @@ go mod tidy
 ### 4. Run the Application
 
 #### Option A: Direct Go Run
+
 ```bash
 go run cmd/main.go
 ```
 
 #### Option B: Docker Compose
+
 ```bash
 docker-compose up --build
 ```
 
 #### Option C: Docker Build
+
 ```bash
 docker build -t gitlab-mr-reviewer .
 docker run -p 8080:8080 --env-file .env gitlab-mr-reviewer
@@ -84,8 +90,9 @@ docker run -p 8080:8080 --env-file .env gitlab-mr-reviewer
 1. GitLab sends a webhook when a merge request is opened, reopened, or updated
 2. The bot validates the webhook signature (if configured)
 3. Fetches the merge request changes via GitLab API
-4. Sends the code changes to Google Gemini for analysis
-5. Posts AI-generated review comments back to the merge request
+4. Attempts to fetch custom review guidance from `guidance.md` in the target repository
+5. Sends the code changes to Google Gemini for analysis with custom or default guidance
+6. Posts AI-generated review comments back to the merge request (both general and line-specific positioned comments)
 
 ## API Endpoints
 
@@ -94,7 +101,7 @@ docker run -p 8080:8080 --env-file .env gitlab-mr-reviewer
 
 ## Project Structure
 
-```
+```tree
 ├── cmd/
 │   └── main.go                 # Application entry point
 ├── internal/
@@ -115,15 +122,61 @@ docker run -p 8080:8080 --env-file .env gitlab-mr-reviewer
 └── README.md                  # This file
 ```
 
+## Custom Review Guidance
+
+The bot supports repository-specific review criteria by reading a `guidance.md` file from the target repository's root directory. This allows each project to customize the AI reviewer's focus areas and criteria.
+
+### Creating guidance.md
+
+Create a `guidance.md` file in your repository root with your custom review guidelines:
+
+```markdown
+# Code Review Guidance
+
+## Review Focus Areas
+
+### 1. Go-Specific Best Practices
+
+- Ensure proper error handling with explicit error returns
+- Check for potential goroutine leaks
+- Verify proper use of context.Context for cancellation
+
+### 2. Security Considerations
+
+- Never log sensitive information (tokens, passwords, secrets)
+- Validate all input parameters
+- Use secure defaults for configuration
+
+### 3. Performance and Reliability
+
+- Look for potential memory leaks
+- Check for inefficient loops or operations
+- Validate retry logic and backoff strategies
+```
+
+### Fallback Behavior
+
+If no `guidance.md` file is found, the bot uses comprehensive default review criteria covering:
+
+- Code quality and maintainability
+- Security vulnerabilities
+- Performance issues
+- Best practices
+- Potential bugs
+- Documentation needs
+
 ## Required Tokens and Permissions
 
 ### GitLab Access Token
+
 Create a GitLab access token with the following scopes:
+
 - `api` - Full API access
 - `read_api` - Read API access
 - `read_repository` - Read repository access
 
 ### Gemini API Key
+
 1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create a new API key
 3. Use this key as your `GEMINI_API_KEY`
@@ -147,11 +200,28 @@ Create a GitLab access token with the following scopes:
 
 ### Logs
 
-The application logs important events including:
+The application uses structured JSON logging via logrus and logs important events including:
+
 - Webhook received events
-- GitLab API calls
+- GitLab API calls (merge request changes, posting comments)
 - Gemini API interactions
-- Error conditions
+- Custom guidance fetching from repositories
+- Positioned comment processing
+- Error conditions and fallback behaviors
+
+Logs include structured fields for easy filtering and monitoring:
+
+```json
+{
+  "level": "info",
+  "msg": "Code review completed",
+  "project_id": 123,
+  "mr_iid": 45,
+  "general_comments_count": 2,
+  "positioned_comments_count": 5,
+  "time": "2025-01-15T10:30:00Z"
+}
+```
 
 ## Contributing
 
@@ -168,6 +238,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## Support
 
 For issues and questions:
+
 1. Check the troubleshooting section
 2. Open an issue on GitHub
 3. Check GitLab and Gemini API documentation

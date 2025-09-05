@@ -31,7 +31,7 @@ func NewReviewService(apiKey string) *ReviewService {
 	}
 }
 
-func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description string) (*models.CodeReview, error) {
+func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description string, gitlabService *GitLabService, projectID int, targetBranch string) (*models.CodeReview, error) {
 	logrus.WithFields(logrus.Fields{
 		"changes_count": len(changes),
 		"mr_title":      title,
@@ -80,7 +80,59 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 
 	logrus.WithField("processed_files", processedFiles).Debug("Finished processing file changes")
 
-	prompt := fmt.Sprintf(`You are an expert code reviewer. Please review the following merge request changes and provide:
+	// Fetch custom review guidance from the repository
+	guidance, err := gitlabService.GetReviewGuidance(projectID, targetBranch)
+	if err != nil {
+		logrus.WithError(err).WithFields(logrus.Fields{
+			"project_id": projectID,
+			"branch":     targetBranch,
+		}).Warn("Failed to fetch custom review guidance, using default")
+		guidance = "" // Use default guidance
+	}
+
+	// Build the prompt with custom or default guidance
+	var prompt string
+	if guidance != "" {
+		logrus.WithFields(logrus.Fields{
+			"project_id":      projectID,
+			"guidance_length": len(guidance),
+		}).Info("Using custom review guidance from repository")
+		
+		prompt = fmt.Sprintf(`You are an expert code reviewer. Please review the following merge request changes according to the custom guidance provided below.
+
+CUSTOM REVIEW GUIDANCE:
+%s
+
+IMPORTANT: Only comment on lines that are actually visible in the diff below. Do not reference line numbers outside of the changes shown.
+
+Please format your response as follows:
+- Start with a summary paragraph
+- Then provide specific comments in this EXACT format:
+  COMMENT:filename.go:diff_line_number:line_type:comment_text
+  
+  Where:
+  - filename.go is the file path (exactly as shown in the diff)
+  - diff_line_number is the DIFF_LINE number shown in brackets (e.g., if you see [DIFF_LINE:5,NEW_LINE:42], use 5)
+  - line_type is either "new" (for lines starting with +), "old" (for lines starting with -), or "context" (for lines starting with space)
+  - comment_text is your feedback
+  
+  Example: If you see "+ const myVar = 5 [DIFF_LINE:3,NEW_LINE:42]", use: COMMENT:src/main.go:3:new:This variable should be declared as const since it never changes.
+
+CRITICAL: 
+- Only use DIFF_LINE numbers from the brackets in the diff
+- Only comment on lines that are actually changed or shown in the diff context
+- Do not try to comment on lines outside the diff
+- Follow the custom guidance provided above
+
+Here are the changes to review:
+
+%s
+
+Be constructive and specific in your feedback. Only reference lines that are visible in the diff above.`, guidance, codeContent.String())
+	} else {
+		logrus.WithField("project_id", projectID).Info("Using default review guidance")
+		
+		prompt = fmt.Sprintf(`You are an expert code reviewer. Please review the following merge request changes and provide:
 
 1. A brief summary of the changes
 2. Specific actionable feedback for improvements with exact file and line references
@@ -120,6 +172,7 @@ Focus on:
 - Documentation needs
 
 Be constructive and specific in your feedback. Only reference lines that are visible in the diff above.`, codeContent.String())
+	}
 
 	logrus.Debug("Sending request to Gemini AI for code review")
 	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
