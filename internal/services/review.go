@@ -6,10 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/generative-ai-go/genai"
 	"github.com/sirupsen/logrus"
 	"github.com/vinamra28/operator-reviewer/internal/models"
-	"google.golang.org/api/option"
+	"google.golang.org/genai"
 )
 
 type ReviewService struct {
@@ -19,7 +18,10 @@ type ReviewService struct {
 func NewReviewService(apiKey string) *ReviewService {
 	logrus.Info("Creating Gemini AI client for code review")
 	ctx := context.Background()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	config := &genai.ClientConfig{
+		APIKey: apiKey,
+	}
+	client, err := genai.NewClient(ctx, config)
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to create Gemini client")
 		panic(fmt.Sprintf("Failed to create Gemini client: %v", err))
@@ -38,9 +40,6 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 	}).Info("Starting AI code review")
 
 	ctx := context.Background()
-	model := r.client.GenerativeModel("gemini-1.5-flash")
-
-	model.SetTemperature(0.1)
 
 	var codeContent strings.Builder
 	codeContent.WriteString("## Merge Request Details\n")
@@ -97,7 +96,7 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 			"project_id":      projectID,
 			"guidance_length": len(guidance),
 		}).Info("Using custom review guidance from repository")
-		
+
 		prompt = fmt.Sprintf(`You are an expert code reviewer. Please review the following merge request changes according to the custom guidance provided below.
 
 CUSTOM REVIEW GUIDANCE:
@@ -131,7 +130,7 @@ Here are the changes to review:
 Be constructive and specific in your feedback. Only reference lines that are visible in the diff above.`, guidance, codeContent.String())
 	} else {
 		logrus.WithField("project_id", projectID).Info("Using default review guidance")
-		
+
 		prompt = fmt.Sprintf(`You are an expert code reviewer. Please review the following merge request changes and provide:
 
 1. A brief summary of the changes
@@ -175,7 +174,11 @@ Be constructive and specific in your feedback. Only reference lines that are vis
 	}
 
 	logrus.Debug("Sending request to Gemini AI for code review")
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	content := genai.NewContentFromText(prompt, "user")
+	config := &genai.GenerateContentConfig{
+		Temperature: genai.Ptr(float32(0.1)),
+	}
+	resp, err := r.client.Models.GenerateContent(ctx, "gemini-2.5-pro", []*genai.Content{content}, config)
 	if err != nil {
 		logrus.WithError(err).Error("Failed to generate AI code review")
 		return nil, fmt.Errorf("failed to generate review: %w", err)
@@ -186,12 +189,7 @@ Be constructive and specific in your feedback. Only reference lines that are vis
 		return nil, fmt.Errorf("no response generated")
 	}
 
-	reviewText := ""
-	for _, part := range resp.Candidates[0].Content.Parts {
-		if txt, ok := part.(genai.Text); ok {
-			reviewText += string(txt)
-		}
-	}
+	reviewText := resp.Text()
 
 	logrus.WithField("review_length", len(reviewText)).Info("AI code review generated successfully")
 	return r.parseReview(reviewText), nil
