@@ -132,8 +132,9 @@ func (g *GitLabService) PostPositionedMRComment(projectID, mrIID int, positioned
 			"line_number": positionedComment.LineNumber,
 		}).Warn("Failed to convert diff line to actual line, falling back to general comment")
 
-		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)**\n\n%s",
-			positionedComment.FilePath, positionedComment.LineNumber, positionedComment.Comment))
+		severityFormatted := formatSeverity(positionedComment.Severity)
+		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)** - %s\n\n%s",
+			positionedComment.FilePath, positionedComment.LineNumber, severityFormatted, positionedComment.Comment))
 	}
 
 	// Create updated positioned comment with actual line number
@@ -158,8 +159,9 @@ func (g *GitLabService) PostPositionedMRComment(projectID, mrIID int, positioned
 			"file_path":  positionedComment.FilePath,
 		}).Info("Falling back to general comment")
 
-		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)**\n\n%s",
-			positionedComment.FilePath, positionedComment.LineNumber, positionedComment.Comment))
+		severityFormatted := formatSeverity(positionedComment.Severity)
+		return g.PostMRComment(projectID, mrIID, fmt.Sprintf("**File: %s (Line %d)** - %s\n\n%s",
+			positionedComment.FilePath, positionedComment.LineNumber, severityFormatted, positionedComment.Comment))
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -182,8 +184,10 @@ func (g *GitLabService) postPositionedCommentHTTP(projectID, mrIID int, position
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
 
-	// Add body
-	_ = writer.WriteField("body", positionedComment.Comment)
+	// Add body with severity and color formatting
+	severityFormatted := formatSeverity(positionedComment.Severity)
+	commentBody := fmt.Sprintf("%s\n\n%s", severityFormatted, positionedComment.Comment)
+	_ = writer.WriteField("body", commentBody)
 
 	// Add position fields
 	_ = writer.WriteField("position[position_type]", "text")
@@ -402,4 +406,19 @@ func (g *GitLabService) GetReviewGuidance(projectID int, branch string) (string,
 	}).Info("Successfully fetched review guidance from repository")
 
 	return content, nil
+}
+
+func formatSeverity(severity string) string {
+	switch severity {
+	case "CRITICAL":
+		return "🔴 **CRITICAL** 🔴"
+	case "HIGH":
+		return "🟠 **HIGH** 🟠"
+	case "MEDIUM":
+		return "🟡 **MEDIUM** 🟡"
+	case "LOW":
+		return "🟢 **LOW** 🟢"
+	default:
+		return fmt.Sprintf("**%s**", severity)
+	}
 }

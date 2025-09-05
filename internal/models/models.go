@@ -130,6 +130,7 @@ type PositionedComment struct {
 	FilePath     string `json:"file_path"`
 	LineNumber   int    `json:"line_number"`
 	LineType     string `json:"line_type"` // "old", "new", or "context"
+	Severity     string `json:"severity"`   // "LOW", "MEDIUM", "HIGH", or "CRITICAL"
 	Comment      string `json:"comment"`
 	OriginalLine string `json:"original_line"`
 	LineCode     string `json:"line_code"` // GitLab's line code for positioning

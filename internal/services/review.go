@@ -107,15 +107,22 @@ IMPORTANT: Only comment on lines that are actually visible in the diff below. Do
 Please format your response as follows:
 - Start with a summary paragraph
 - Then provide specific comments in this EXACT format:
-  COMMENT:filename.go:diff_line_number:line_type:comment_text
+  COMMENT:filename.go:diff_line_number:line_type:severity:comment_text
   
   Where:
   - filename.go is the file path (exactly as shown in the diff)
   - diff_line_number is the DIFF_LINE number shown in brackets (e.g., if you see [DIFF_LINE:5,NEW_LINE:42], use 5)
   - line_type is either "new" (for lines starting with +), "old" (for lines starting with -), or "context" (for lines starting with space)
+  - severity is one of: LOW, MEDIUM, HIGH, or CRITICAL
   - comment_text is your feedback
   
-  Example: If you see "+ const myVar = 5 [DIFF_LINE:3,NEW_LINE:42]", use: COMMENT:src/main.go:3:new:This variable should be declared as const since it never changes.
+  Severity Guidelines:
+  - CRITICAL: Security vulnerabilities, potential data loss, system crashes
+  - HIGH: Major bugs, performance issues, serious logic errors
+  - MEDIUM: Code quality issues, maintainability concerns, minor bugs
+  - LOW: Style improvements, documentation suggestions, minor optimizations
+  
+  Example: If you see "+ const myVar = 5 [DIFF_LINE:3,NEW_LINE:42]", use: COMMENT:src/main.go:3:new:LOW:This variable should be declared as const since it never changes.
 
 CRITICAL: 
 - Only use DIFF_LINE numbers from the brackets in the diff
@@ -143,15 +150,22 @@ IMPORTANT: Only comment on lines that are actually visible in the diff below. Do
 Please format your response as follows:
 - Start with a summary paragraph
 - Then provide specific comments in this EXACT format:
-  COMMENT:filename.go:diff_line_number:line_type:comment_text
+  COMMENT:filename.go:diff_line_number:line_type:severity:comment_text
   
   Where:
   - filename.go is the file path (exactly as shown in the diff)
   - diff_line_number is the DIFF_LINE number shown in brackets (e.g., if you see [DIFF_LINE:5,NEW_LINE:42], use 5)
   - line_type is either "new" (for lines starting with +), "old" (for lines starting with -), or "context" (for lines starting with space)
+  - severity is one of: LOW, MEDIUM, HIGH, or CRITICAL
   - comment_text is your feedback
   
-  Example: If you see "+ const myVar = 5 [DIFF_LINE:3,NEW_LINE:42]", use: COMMENT:src/main.go:3:new:This variable should be declared as const since it never changes.
+  Severity Guidelines:
+  - CRITICAL: Security vulnerabilities, potential data loss, system crashes
+  - HIGH: Major bugs, performance issues, serious logic errors
+  - MEDIUM: Code quality issues, maintainability concerns, minor bugs
+  - LOW: Style improvements, documentation suggestions, minor optimizations
+  
+  Example: If you see "+ const myVar = 5 [DIFF_LINE:3,NEW_LINE:42]", use: COMMENT:src/main.go:3:new:LOW:This variable should be declared as const since it never changes.
 
 CRITICAL: 
 - Only use DIFF_LINE numbers from the brackets in the diff
@@ -214,13 +228,14 @@ func (r *ReviewService) parseReview(reviewText string) *models.CodeReview {
 			comment = strings.TrimSpace(comment)
 
 			if comment != "" {
-				// Try to parse positioned comment format: filename:line:type:comment
-				parts := strings.SplitN(comment, ":", 4)
-				if len(parts) == 4 {
+				// Try to parse positioned comment format: filename:line:type:severity:comment
+				parts := strings.SplitN(comment, ":", 5)
+				if len(parts) == 5 {
 					filePath := parts[0]
 					lineNumStr := parts[1]
 					lineType := parts[2]
-					commentText := parts[3]
+					severity := parts[3]
+					commentText := parts[4]
 
 					if lineNum, err := strconv.Atoi(lineNumStr); err == nil {
 						// Valid positioned comment
@@ -228,6 +243,7 @@ func (r *ReviewService) parseReview(reviewText string) *models.CodeReview {
 							FilePath:     filePath,
 							LineNumber:   lineNum,
 							LineType:     lineType,
+							Severity:     severity,
 							Comment:      commentText,
 							OriginalLine: "", // We could enhance this later
 						}
@@ -237,6 +253,7 @@ func (r *ReviewService) parseReview(reviewText string) *models.CodeReview {
 							"file_path":   filePath,
 							"line_number": lineNum,
 							"line_type":   lineType,
+							"severity":    severity,
 						}).Debug("Parsed positioned comment")
 					} else {
 						// Fallback to general comment
