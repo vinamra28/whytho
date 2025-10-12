@@ -1,21 +1,23 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24.2 AS builder
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY cmd/ ./cmd/
+COPY internal/ ./internal/
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main cmd/main.go
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o whytho cmd/main.go
 
-FROM alpine:latest
+FROM gcr.io/distroless/static:nonroot
 
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
+WORKDIR /
 
-COPY --from=builder /app/main .
+COPY --from=builder /app/whytho .
 
 EXPOSE 8080
 
-CMD ["./main"]
+CMD ["/whytho"]
