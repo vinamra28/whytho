@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/vinamra28/operator-reviewer/internal/config"
-	"github.com/vinamra28/operator-reviewer/internal/handlers"
-	"github.com/vinamra28/operator-reviewer/internal/services"
+	"github.com/vinamra28/whytho/internal/config"
+	"github.com/vinamra28/whytho/internal/handlers"
+	"github.com/vinamra28/whytho/internal/services"
 )
 
 type Server struct {

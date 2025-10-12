@@ -9,15 +9,15 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vinamra28/operator-reviewer/internal/config"
-	"github.com/vinamra28/operator-reviewer/internal/server"
+	"github.com/vinamra28/whytho/internal/config"
+	"github.com/vinamra28/whytho/internal/server"
 )
 
 func main() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetLevel(logrus.InfoLevel)
 
-	logrus.Info("Starting GitLab MR Reviewer Bot")
+	logrus.Info("Starting whytho Bot")
 
 	cfg, err := config.Load()
 	if err != nil {

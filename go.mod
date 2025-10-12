@@ -1,4 +1,4 @@
-module github.com/vinamra28/operator-reviewer
+module github.com/vinamra28/whytho
 
 go 1.24.2
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vinamra28/operator-reviewer/internal/models"
+	"github.com/vinamra28/whytho/internal/models"
 	"google.golang.org/genai"
 )
 
@@ -54,14 +54,14 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 
 	// Filter out excluded paths
 	filteredChanges, excludedFiles := r.filterExcludedChanges(changes, whyThoConfig)
-	
+
 	if len(excludedFiles) > 0 {
 		logrus.WithFields(logrus.Fields{
-			"project_id":      projectID,
-			"mr_iid":          mrIID,
-			"excluded_count":  len(excludedFiles),
-			"excluded_files":  excludedFiles,
-			"total_changes":   len(changes),
+			"project_id":       projectID,
+			"mr_iid":           mrIID,
+			"excluded_count":   len(excludedFiles),
+			"excluded_files":   excludedFiles,
+			"total_changes":    len(changes),
 			"filtered_changes": len(filteredChanges),
 		}).Info("Excluded files from review based on WhyTho config")
 	}
@@ -72,12 +72,12 @@ func (r *ReviewService) ReviewCode(changes []models.MRChange, title, description
 			"mr_iid":         mrIID,
 			"excluded_count": len(excludedFiles),
 		}).Info("All files excluded from review, returning empty review")
-		
+
 		summary := "All files in this merge request are excluded from review based on the .whytho/config.yaml configuration."
 		if len(excludedFiles) > 0 {
 			summary += fmt.Sprintf(" Excluded files: %s", strings.Join(excludedFiles, ", "))
 		}
-		
+
 		return &models.CodeReview{
 			Summary:            summary,
 			Comments:           []string{},
@@ -372,7 +372,7 @@ func (r *ReviewService) shouldExcludePath(filePath string, excludePaths []string
 		if matched {
 			return true
 		}
-		
+
 		// Also check if the pattern with ** matches (simple directory prefix matching)
 		if strings.HasSuffix(pattern, "/**") {
 			prefix := strings.TrimSuffix(pattern, "/**")

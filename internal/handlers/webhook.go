@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/vinamra28/operator-reviewer/internal/models"
-	"github.com/vinamra28/operator-reviewer/internal/services"
+	"github.com/vinamra28/whytho/internal/models"
+	"github.com/vinamra28/whytho/internal/services"
 )
 
 type WebhookHandler struct {

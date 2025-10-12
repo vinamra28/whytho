@@ -26,8 +26,8 @@ An AI-powered GitLab merge request reviewer bot that uses Google's Gemini LLM to
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/vinamra28/operator-reviewer.git
-cd operator-reviewer
+git clone https://github.com/vinamra28/whytho.git
+cd whytho
 ```
 
 ### 2. Configure Environment Variables
@@ -71,8 +71,8 @@ docker-compose up --build
 #### Option C: Docker Build
 
 ```bash
-docker build -t gitlab-mr-reviewer .
-docker run -p 8080:8080 --env-file .env gitlab-mr-reviewer
+docker build -t whytho .
+docker run -p 8080:8080 --env-file .env whytho
 ```
 
 ## GitLab Webhook Configuration
