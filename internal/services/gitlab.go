@@ -539,7 +539,7 @@ func formatSeverity(severity string) string {
 	case "MEDIUM":
 		return "![Medium](https://camo.githubusercontent.com/a33c7ba47779a2aabda978d90fc2665dd949d88da87f5ff554e65308de059f02/68747470733a2f2f7777772e677374617469632e636f6d2f636f64657265766965776167656e742f6d656469756d2d7072696f726974792e737667)"
 	case "LOW":
-		return "![Low]()"
+		return "![Low](https://camo.githubusercontent.com/8fb8f2550573602557367af68a00a632c2f9e5ffbf5ade2572b4e0bfb7d3d33a/68747470733a2f2f7777772e677374617469632e636f6d2f636f64657265766965776167656e742f6c6f772d7072696f726974792e737667)"
 	default:
 		return fmt.Sprintf("**%s**", severity)
 	}
