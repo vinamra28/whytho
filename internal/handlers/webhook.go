@@ -75,6 +75,17 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
+	// Check if this is a new commit (only for update actions)
+	// The oldrev field is only present when commits are pushed to the MR
+	if webhook.ObjectAttributes.Action == "update" && webhook.ObjectAttributes.OldRev == "" {
+		logrus.WithFields(logrus.Fields{
+			"project_id": webhook.Project.ID,
+			"mr_iid":     webhook.ObjectAttributes.IID,
+		}).Info("MR update without new commits (e.g., label/assignee change), skipping review")
+		c.JSON(http.StatusOK, gin.H{"message": "No new commits, review skipped"})
+		return
+	}
+
 	logrus.WithFields(logrus.Fields{
 		"project_id": webhook.Project.ID,
 		"mr_iid":     webhook.ObjectAttributes.IID,

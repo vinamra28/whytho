@@ -55,6 +55,7 @@ type ObjectAttributes struct {
 	WorkInProgress  bool   `json:"work_in_progress"`
 	Assignee        User   `json:"assignee"`
 	Action          string `json:"action"`
+	OldRev          string `json:"oldrev,omitempty"` // Present when commits are pushed
 }
 
 type Source struct {
