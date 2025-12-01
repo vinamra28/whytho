@@ -75,6 +75,17 @@ func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
+	// Only review open MRs (skip merged, closed, or locked MRs)
+	if webhook.ObjectAttributes.State != "opened" {
+		logrus.WithFields(logrus.Fields{
+			"project_id": webhook.Project.ID,
+			"mr_iid":     webhook.ObjectAttributes.IID,
+			"state":      webhook.ObjectAttributes.State,
+		}).Info("MR is not open, skipping review")
+		c.JSON(http.StatusOK, gin.H{"message": "MR not open, review skipped"})
+		return
+	}
+
 	// Check if this is a new commit (only for update actions)
 	// The oldrev field is only present when commits are pushed to the MR
 	if webhook.ObjectAttributes.Action == "update" && webhook.ObjectAttributes.OldRev == "" {
